@@ -1,0 +1,40 @@
+test_all_scenarios (test_stop.StopTests.test_all_scenarios) ... ok
+test_approval_gate_never_calls_model (test_stop.StopTests.test_approval_gate_never_calls_model) ... ok
+test_boolean_final_total_is_invalid (test_stop.StopTests.test_boolean_final_total_is_invalid) ... ok
+test_boolean_task_quantity_is_invalid (test_stop.StopTests.test_boolean_task_quantity_is_invalid) ... ok
+test_correct_final_at_last_step_is_accepted (test_stop.StopTests.test_correct_final_at_last_step_is_accepted) ... ok
+test_counters_are_new_for_each_run (test_stop.StopTests.test_counters_are_new_for_each_run) ... ok
+test_deadline_after_model_stops_before_tool (test_stop.StopTests.test_deadline_after_model_stops_before_tool) ... ok
+test_deadline_takes_priority_over_late_final (test_stop.StopTests.test_deadline_takes_priority_over_late_final) ... ok
+test_deadline_takes_priority_over_late_model_error (test_stop.StopTests.test_deadline_takes_priority_over_late_model_error) ... ok
+test_final_can_follow_last_tool_attempt (test_stop.StopTests.test_final_can_follow_last_tool_attempt) ... ok
+test_final_without_evidence_is_not_completion (test_stop.StopTests.test_final_without_evidence_is_not_completion) ... ok
+test_history_contains_successful_tool_evidence (test_stop.StopTests.test_history_contains_successful_tool_evidence) ... ok
+test_invalid_budget_is_rejected_before_run (test_stop.StopTests.test_invalid_budget_is_rejected_before_run) ... ok
+test_malformed_final_is_invalid (test_stop.StopTests.test_malformed_final_is_invalid) ... ok
+test_missing_input_never_calls_model (test_stop.StopTests.test_missing_input_never_calls_model) ... ok
+test_model_error_counts_attempt_and_redacts_message (test_stop.StopTests.test_model_error_counts_attempt_and_redacts_message) ... ok
+test_mutating_retained_history_cannot_change_run_result (test_stop.StopTests.test_mutating_retained_history_cannot_change_run_result) ... ok
+test_no_extra_summary_after_step_limit (test_stop.StopTests.test_no_extra_summary_after_step_limit) ... ok
+test_non_boolean_approved_is_rejected_before_planner (test_stop.StopTests.test_non_boolean_approved_is_rejected_before_planner) ... ok
+test_non_boolean_needs_approval_is_rejected_before_planner (test_stop.StopTests.test_non_boolean_needs_approval_is_rejected_before_planner) ... ok
+test_non_decision_model_output_fails (test_stop.StopTests.test_non_decision_model_output_fails) ... ok
+test_non_finite_arguments_never_call_tool (test_stop.StopTests.test_non_finite_arguments_never_call_tool) ... ok
+test_non_json_arguments_never_call_tool (test_stop.StopTests.test_non_json_arguments_never_call_tool) ... ok
+test_permanent_tool_error_is_not_retried (test_stop.StopTests.test_permanent_tool_error_is_not_retried) ... ok
+test_reordered_argument_keys_share_repeat_key (test_stop.StopTests.test_reordered_argument_keys_share_repeat_key) ... ok
+test_retry_does_not_spend_repeat_proposal_allowance (test_stop.StopTests.test_retry_does_not_spend_repeat_proposal_allowance) ... ok
+test_retry_is_counted_as_tool_attempt_not_model_step (test_stop.StopTests.test_retry_is_counted_as_tool_attempt_not_model_step) ... ok
+test_rewriting_history_cannot_forge_tool_evidence (test_stop.StopTests.test_rewriting_history_cannot_forge_tool_evidence) ... ok
+test_tool_output_schema_is_checked (test_stop.StopTests.test_tool_output_schema_is_checked) ... ok
+test_trusted_approval_allows_new_run (test_stop.StopTests.test_trusted_approval_allows_new_run) ... ok
+test_unknown_tool_never_executes (test_stop.StopTests.test_unknown_tool_never_executes) ... ok
+test_wrong_currency_cannot_validate (test_stop.StopTests.test_wrong_currency_cannot_validate) ... ok
+test_wrong_tool_arguments_cannot_validate_task (test_stop.StopTests.test_wrong_tool_arguments_cannot_validate_task) ... ok
+test_zero_retries_stops_on_first_transient_error (test_stop.StopTests.test_zero_retries_stops_on_first_transient_error) ... ok
+test_zero_total_is_valid (test_stop.StopTests.test_zero_total_is_valid) ... ok
+
+----------------------------------------------------------------------
+Ran 35 tests in 0.003s
+
+OK

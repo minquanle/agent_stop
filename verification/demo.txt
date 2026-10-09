@@ -1,0 +1,30 @@
+A: status=completed; reason=criteria_met
+  steps=2; tool_calls=1
+  output={'total': 100000, 'currency': 'VND'}; partial_results=1
+B: status=failed; reason=validation_failed
+  steps=2; tool_calls=1
+  output=None; partial_results=1
+C: status=blocked; reason=missing_input
+  steps=0; tool_calls=0
+  output=None; partial_results=0
+D: status=failed; reason=retry_exhausted
+  steps=1; tool_calls=2
+  output=None; partial_results=0
+E: status=budget_exhausted; reason=step_limit
+  steps=1; tool_calls=1
+  output=None; partial_results=1
+F: status=budget_exhausted; reason=tool_limit
+  steps=1; tool_calls=1
+  output=None; partial_results=0
+G: status=budget_exhausted; reason=time_limit
+  steps=1; tool_calls=1
+  output=None; partial_results=0
+H: status=failed; reason=no_progress
+  steps=3; tool_calls=2
+  output=None; partial_results=2
+I: status=completed; reason=criteria_met
+  steps=2; tool_calls=2
+  output={'total': 100000, 'currency': 'VND'}; partial_results=1
+J: status=blocked; reason=approval_required
+  steps=0; tool_calls=0
+  output=None; partial_results=0
