@@ -1,25 +1,51 @@
-# Kiểm chứng trước khi xuất bản
+# Kiểm chứng Gemini 2.5 Flash
 
-Ngày: 09/10/2026. Môi trường: Windows, Python 3.11.9, thư viện chuẩn.
+Ngày chạy: **11/10/2026**. Windows, Python 3.11.9; google-genai 2.29.0,
+python-dotenv 1.2.4. Mọi đề xuất của planner trong các case cần model đều đến từ
+API `gemini-2.5-flash`; ghi response_id, model_version và token thực tế.
 
-- Tạo venv mới tại root bộ mã xuất bản, chạy đúng lệnh README: 35 phương thức test đạt.
-- Chạy 10 demo A–J; status, reason, steps, tool_calls và output khớp phiên bản trong bài.
-- Chạy riêng `--case A --json`: completed/criteria_met, 2 bước, 1 lần thử tool,
-  output 100000 VND và một bằng chứng tool.
-- Biên dịch cú pháp cả năm file bằng `py_compile` thành công.
-- Năm file Python xuất bản khớp từng byte với nguồn chuẩn trong gói bài viết.
-- Log ở [verification/tests.txt](verification/tests.txt), [verification/demo.txt](verification/demo.txt)
-  và [verification/case-a.json](verification/case-a.json).
-- [verification/reproduction.txt](verification/reproduction.txt) lưu lần tái dựng ba file
-  tools/contracts/controller từ snippet LaTeX, ghép demo/test đi kèm rồi chạy trong venv mới:
-  35 test đạt. Đây là kiểm tra trước bước chuẩn bị repo.
+## Kết quả thực tế
 
-Hai lỗi logic đã sửa và có test hồi quy: planner sửa lịch sử chung để giả mạo bằng chứng;
-cờ phê duyệt dạng chuỗi hoặc số được coi là truthy. Controller gửi bản sao sâu của lịch sử,
-kiểm kiểu bool của hai cờ trước planner khi đầu vào đầy đủ.
+- `python -m unittest -v test_live`: **10 test đạt, 0 skipped**, 195.767 giây.
+- Suite gửi **13 request**, tổng **3151 token**. C/J dừng trước request theo gate
+  đầu vào/phê duyệt. Không cộng lượt CLI riêng vào số liệu của suite.
+- A: completed/criteria_met, 2 bước, 1 lần thử tool, 100000 VND.
+- B: failed/validation_failed; D: failed/retry_exhausted; H: failed/no_progress.
+- E/F/G: budget_exhausted với step_limit/tool_limit/time_limit tương ứng.
+- I: completed sau 2 lần thử tool. J: blocked/approval_required.
+- G dùng đồng hồ thực và tool chờ 26 giây; deadline 25 giây, thời gian lần chạy
+  39.672 giây gồm chờ giãn request. Controller nhận time_limit tại điểm kiểm tra.
+- Cài dependencies theo README trong venv ở checkout repo: pip check đạt,
+  py_compile cả bảy file đạt. Chạy CLI `--quantity 4 --unit-price 25000` bằng
+  interpreter này: exit 0, completed, 2 response Gemini thật, tổng 488 token.
+- Bảy file Python, requirements và cấu hình mẫu đồng bộ với bộ mã đi kèm bài.
 
-Demo dùng planner theo kịch bản, đồng hồ giả cho G và lỗi giả cho D/F/I;
-tool tính tiền dùng số nguyên chạy thật. Chưa gọi LLM/API thật, chưa xác minh macOS/Linux
-trực tiếp; lệnh cho các hệ đó dùng cùng code và Python trong venv.
-Soft deadline không hủy hàm đang chạy. Chưa triển khai phê duyệt thực,
-checkpoint/resume, nhóm tool, timeout/backoff mạng hoặc ngân sách token/chi phí.
+Bằng chứng: [log test](verification/live_suite_tests.txt),
+[kết quả đầy đủ](verification/live_suite_results.json),
+[tóm tắt A–J](verification/live_suite_summary.txt),
+[case A](verification/live_success.json),
+[CLI trong môi trường repo](verification/cli_success.json),
+[phiên bản suite](verification/versions.txt),
+[phiên bản môi trường repo](verification/repo_versions.txt).
+
+## Phạm vi và giới hạn
+
+B/D/F/G/I chủ động tạo lỗi hoặc độ trễ ở tool để kích hoạt nhánh cần kiểm tra.
+H thêm chỉ dẫn chẩn đoán yêu cầu model lặp đề xuất. Các quyết định vẫn được
+Gemini sinh qua API. Những case này không chứng minh tần suất lỗi trong vận hành.
+Số token, thời gian và khả năng làm theo chỉ dẫn có thể thay đổi giữa các lần chạy.
+
+Controller kiểm schema, tổng tiền, đơn vị và bằng chứng tool khớp nhiệm vụ;
+đưa bản sao sâu của lịch sử cho planner; kiểm đúng kiểu bool của cờ phê duyệt.
+Lần kiểm thử này gồm các nhánh A–J, không phải kiểm thử mọi tổ hợp đầu vào.
+
+SDK thử HTTP một lần, timeout tối đa 30 giây và giảm theo thời gian tác vụ còn lại.
+Khoảng cách request mặc định 15 giây chỉ điều tiết một tiến trình. Deadline mềm
+không hủy tool đang chạy. HTTP 429 là failed/model_error; ngân sách cục bộ hết
+là budget_exhausted. Token được ghi, chưa là ngân sách dừng.
+Chưa có checkpoint bền vững, xác thực phê duyệt, nhóm tool, backoff tool hoặc
+idempotency cho thao tác ghi. Chưa chạy trực tiếp trên macOS/Linux.
+
+Task và bằng chứng tool được gửi tới Google. Bộ mã dùng dữ liệu mẫu;
+.env thật được bỏ qua bởi Git. Không đưa key, venv, cache hoặc tài liệu LaTeX/PDF
+vào repo code. Dùng requirements và hướng dẫn API trong README để chạy lại.

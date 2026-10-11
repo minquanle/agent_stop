@@ -1,0 +1,15 @@
+test_A_completed (test_live.LiveTests.test_A_completed) ... ok
+test_B_wrong_evidence (test_live.LiveTests.test_B_wrong_evidence) ... ok
+test_C_missing_input (test_live.LiveTests.test_C_missing_input) ... ok
+test_D_retry_exhausted (test_live.LiveTests.test_D_retry_exhausted) ... ok
+test_E_step_limit (test_live.LiveTests.test_E_step_limit) ... ok
+test_F_tool_limit (test_live.LiveTests.test_F_tool_limit) ... ok
+test_G_real_deadline (test_live.LiveTests.test_G_real_deadline) ... ok
+test_H_repeated_proposals (test_live.LiveTests.test_H_repeated_proposals) ... ok
+test_I_retry_recovery (test_live.LiveTests.test_I_retry_recovery) ... ok
+test_J_approval_required (test_live.LiveTests.test_J_approval_required) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 195.767s
+
+OK

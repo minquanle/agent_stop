@@ -22,7 +22,7 @@ class Task:
 class Budget:
     max_steps: int = 4
     max_tool_calls: int = 3
-    max_seconds: float = 10.0
+    max_seconds: float = 90.0
     max_retries: int = 1
     max_same_call: int = 2
 

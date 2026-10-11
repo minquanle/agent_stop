@@ -1,144 +1,199 @@
-# Agent Stop — Thiết kế điều kiện dừng cho AI Agent
+# Agent Stop — Điều kiện dừng với Gemini 2.5 Flash
 
-Mã thực hành thuộc chuỗi **AI Guru x TiniX**. Controller phân biệt bốn trạng thái
-`completed`, `failed`, `blocked`, `budget_exhausted` và trả lý do, bộ đếm,
-bằng chứng từng phần, trace cùng hành động tiếp theo.
+Mã thực hành thuộc chuỗi **AI Guru x TiniX**. Gemini 2.5 Flash sinh quyết định
+qua API thật; Python chạy tool tính tiền và kiểm tra bốn trạng thái
+`completed`, `failed`, `blocked`, `budget_exhausted`.
 
-Demo chạy **offline**, dùng planner theo kịch bản và tool Python tính tiền thật.
-Không cần API key hoặc thư viện ngoài. Code dành cho Python **3.11** trở lên;
-bản kiểm thử dùng Python 3.11.9 trên Windows.
+Cần Python 3.11, Git, kết nối mạng và API key có quyền gọi **gemini-2.5-flash**.
+Tác vụ và lịch sử kết quả tool được gửi tới Google. Dùng dữ liệu mẫu khi thực hành.
 
-## 1. Lấy mã nguồn
+## 1. Clone và cài môi trường
 
 ```bash
 git clone https://github.com/minquanle/agent_stop.git
 cd agent_stop
 ```
 
-Cũng có thể chọn **Code → Download ZIP**, giải nén và mở terminal trong thư mục
-chứa `offline_demo.py`. Năm file Python nằm ngay ở thư mục gốc repo.
-
-## 2. Tạo môi trường
-
 Windows PowerShell:
 
 ```powershell
 py -3.11 -m venv .venv
-.\.venv\Scripts\python.exe --version
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pip check
 ```
 
 macOS/Linux:
 
 ```bash
 python3.11 -m venv .venv
-.venv/bin/python --version
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m pip check
 ```
 
-Mã chỉ dùng thư viện chuẩn; không cần `pip install`, `.env` hoặc kích hoạt venv.
-Các lệnh dưới đây dùng trực tiếp Python trong venv.
+Các lệnh dùng Python trực tiếp trong venv, không cần activate.
+Thư viện trực tiếp được ghim: google-genai 2.29.0, python-dotenv 1.2.4.
 
-## 3. Kiểm thử và chạy demo
+## 2. Cấu hình API
 
-Windows:
+Nếu chưa có `.env`, tạo từ mẫu. Windows:
 
 ```powershell
-.\.venv\Scripts\python.exe -m unittest -v test_stop
-.\.venv\Scripts\python.exe offline_demo.py
-.\.venv\Scripts\python.exe offline_demo.py --case A --json
+if (-not (Test-Path -LiteralPath .env)) {
+    Copy-Item -LiteralPath .env.example -Destination .env
+}
 ```
 
 macOS/Linux:
 
 ```bash
-.venv/bin/python -m unittest -v test_stop
-.venv/bin/python offline_demo.py
-.venv/bin/python offline_demo.py --case A --json
+if [ ! -f .env ]; then cp .env.example .env; fi
 ```
 
-Kết quả mong đợi: **35 phương thức test đạt**, gồm nhiều subtest. Demo chạy đủ A–J;
-dùng `--case A` đến `--case J` để chạy riêng, thêm `--json` để in kết quả và trace.
-Các trạng thái lỗi/hết ngân sách trong demo là tình huống chủ đích, không phải lỗi cài đặt.
+Mở `.env` và điền key của bạn:
 
-| Case | Nội dung | Status | Reason | Steps | Tool attempts |
-| --- | --- | --- | --- | ---: | ---: |
-| A | Đúng tổng và bằng chứng | completed | criteria_met | 2 | 1 |
-| B | Ứng viên sai tổng | failed | validation_failed | 2 | 1 |
-| C | Thiếu đầu vào | blocked | missing_input | 0 | 0 |
-| D | Tool lỗi quá số retry | failed | retry_exhausted | 1 | 2 |
-| E | Hết bước planner | budget_exhausted | step_limit | 1 | 1 |
-| F | Hết lần thử tool trước retry | budget_exhausted | tool_limit | 1 | 1 |
-| G | Tool trả sau deadline giả | budget_exhausted | time_limit | 1 | 1 |
-| H | Đề xuất cùng tool/args lần thứ ba | failed | no_progress | 3 | 2 |
-| I | Tool phục hồi sau một lỗi | completed | criteria_met | 2 | 2 |
-| J | Thiếu phê duyệt | blocked | approval_required | 0 | 0 |
-
-Ví dụ A:
-
-```text
-A: status=completed; reason=criteria_met
-  steps=2; tool_calls=1
-  output={'total': 100000, 'currency': 'VND'}; partial_results=1
+```dotenv
+GOOGLE_API_KEY=your_google_api_key_here
+GEMINI_MODEL=gemini-2.5-flash
+GEMINI_MIN_INTERVAL=15
 ```
 
-## 4. Hợp đồng và cách dùng controller
+`.env` được nạp theo vị trí `gemini_planner.py`. Biến môi trường đã tồn tại được ưu tiên.
+Repo chỉ chứa cấu hình mẫu; không commit key thật. Mẫu chỉ chấp nhận model
+`gemini-2.5-flash`. Quyền model và quota phụ thuộc project; kiểm tra trong AI Studio.
+Google hiện giới hạn quyền sử dụng 2.5 cho một số project đã dùng model trước đây:
+[tài liệu model](https://ai.google.dev/gemini-api/docs/models/gemini-2.5-flash).
 
-```python
-from contracts import Budget, Task
-from offline_demo import ScriptedPlanner, total_call, final
-from stop_core import run_agent
+`GEMINI_MIN_INTERVAL` là khoảng cách giữa thời điểm bắt đầu các request trong một tiến trình,
+đơn vị giây, nhận 0–120. Mặc định 15 giúp giãn tải, không cấp thêm quota. Quota áp dụng
+[theo project](https://ai.google.dev/gemini-api/docs/rate-limits), không theo từng key.
+Nhiều tiến trình cần bộ giới hạn dùng chung; giới hạn này không phối hợp giữa các tiến trình.
 
-planner = ScriptedPlanner([total_call(), final()])
-result = run_agent(planner, Task(4, 25000), Budget())
-print(result.status.value, result.reason, result.output)
+## 3. Chạy Agent bằng API thật
+
+Windows:
+
+```powershell
+.\.venv\Scripts\python.exe agent_stop.py --quantity 4 --unit-price 25000
 ```
 
-`completed` cần ứng viên có đúng hai trường `total` (int) và `currency` (`VND`),
-đúng tổng của nhiệm vụ và có bằng chứng `calculate_total` với đúng tham số.
-Một ứng viên đúng số nhưng chưa gọi tool hoặc dùng bằng chứng của nhiệm vụ khác
-không được nhận. `output` chỉ có giá trị khi ứng viên được chấp nhận.
+macOS/Linux:
 
-| Thiết lập Budget | Mặc định | Đơn vị / ý nghĩa |
+```bash
+.venv/bin/python agent_stop.py --quantity 4 --unit-price 25000
+```
+
+Chương trình in JSON gồm `result`, `api_calls`, `planner_events` và `elapsed_seconds`.
+Luồng mong đợi: Gemini đề xuất tool → Python tính tiền → Gemini đưa ứng viên cuối
+→ validator nhận 100000 VND với bằng chứng đúng tham số.
+Mỗi response được ghi ID, model version, token, quyết định và thời gian.
+Thông báo ngoại lệ thô không được đưa vào log; đọc `error_type`/`http_status` khi API lỗi.
+
+Thiếu số lượng:
+
+```powershell
+.\.venv\Scripts\python.exe agent_stop.py --unit-price 25000
+```
+
+Chờ phê duyệt:
+
+```powershell
+.\.venv\Scripts\python.exe agent_stop.py --quantity 4 --unit-price 25000 --needs-approval
+```
+
+Hai trường hợp này bị chặn trước request. Khi người vận hành có quyền đã duyệt,
+chạy mới với cả `--needs-approval --approved`. Cờ CLI là quyết định của ứng dụng/người vận hành,
+không phải cơ chế xác thực người duyệt. Mã không gửi hóa đơn.
+CLI trả exit code 0 khi completed, 1 khi dừng ở trạng thái khác, 2 khi cấu hình/khởi chạy sai.
+
+## 4. Demo và kiểm thử tích hợp
+
+```powershell
+.\.venv\Scripts\python.exe live_demo.py --case A --json
+.\.venv\Scripts\python.exe live_demo.py --save live_results.json
+.\.venv\Scripts\python.exe -m unittest -v test_live
+```
+
+macOS/Linux dùng `.venv/bin/python` thay đường dẫn trên. Có 10 test tích hợp;
+các nhánh cần planner gọi Gemini thật, dùng quota và có thể chạy vài phút.
+Khi gặp 429, runner dừng các case cần API còn lại; test đánh dấu case bị ảnh hưởng là
+fail, các case cần API phía sau là skipped. C/J vẫn kiểm tra gate mà không gửi request.
+Không coi skipped là đạt. Bộ test ghi kết quả vào `live_results.json`, tóm tắt
+`live_output.txt`; lệnh chạy test tiếp tục ghi log mới nếu bạn chuyển hướng output.
+
+| Case | Điều kiện chẩn đoán | Status / reason mong đợi khi API hoạt động |
+| --- | --- | --- |
+| A | Tổng và bằng chứng đúng | completed / criteria_met |
+| B | Tool trả tổng lệch 1 | failed / validation_failed |
+| C | Thiếu số lượng | blocked / missing_input |
+| D | Tool lỗi quá retry | failed / retry_exhausted |
+| E | Chỉ cấp 1 bước | budget_exhausted / step_limit |
+| F | Tool lỗi, chỉ cấp 1 lần thử | budget_exhausted / tool_limit |
+| G | Deadline 25 giây; tool chờ thật 26 giây | budget_exhausted / time_limit |
+| H | Prompt chẩn đoán yêu cầu đề xuất lặp | failed / no_progress |
+| I | Tool lỗi 1 lần rồi phục hồi | completed / criteria_met |
+| J | Chưa được duyệt | blocked / approval_required |
+
+B/D/F/G/I chủ động tạo lỗi hoặc độ trễ ở tool để kiểm tra chính sách. Gemini vẫn
+sinh quyết định qua API; không thay response bằng quyết định viết sẵn. G dùng đồng hồ
+và sleep thật. H phụ thuộc mô hình làm theo chỉ dẫn chẩn đoán; kết quả có thể lệch kỳ vọng
+và cần đọc log. API 429 hoặc timeout có thể khiến một case dừng trước nhánh mong đợi.
+
+**Kiểm chứng ngày 11/10/2026:** cả 10 test tích hợp đạt, 0 skipped.
+Bộ test gửi 13 request thật tới gemini-2.5-flash, ghi nhận tổng 3151 token.
+C/J dừng trước API; G dùng thời gian thực. A completed với hai response,
+output 100000 VND và token từng response là 197, 291. Các con số có thể đổi khi chạy lại.
+Xem [hồ sơ kiểm chứng](verification/live_suite_results.json) và
+[log test](verification/live_suite_tests.txt).
+
+## 5. Hợp đồng, ngân sách và file
+
+| Cấu hình Budget | Mặc định | Ý nghĩa |
 | --- | ---: | --- |
-| max_steps | 4 | Số lần thử planner, kể cả lượt trả final |
+| max_steps | 4 | Số lần thử planner, kể cả lỗi và lượt final |
 | max_tool_calls | 3 | Số lần thử tool, gồm lỗi và retry |
-| max_seconds | 10.0 | Deadline mềm của một lần chạy, đo bằng monotonic |
-| max_retries | 1 | Số retry cho mỗi đề xuất tool |
-| max_same_call | 2 | Số đề xuất cùng tên tool và tham số JSON trong một lần chạy |
+| max_seconds | 90.0 | Deadline mềm, gồm chờ request, API, tool và retry |
+| max_retries | 1 | Retry tool cho mỗi đề xuất |
+| max_same_call | 2 | Đề xuất cùng tên tool và tham số JSON trong lần chạy |
 
-Retry không gọi lại planner, không tăng bước hoặc số đề xuất lặp; nó tăng số lần thử tool.
-Final hợp lệ ở bước cuối vẫn được nhận. Khi hết tool budget, controller có thể dùng
-bước planner còn lại để hoàn thành từ bằng chứng đã nhận. Deadline được kiểm tra
-với `>=` tại ranh giới thao tác; dữ liệu trả muộn chưa được nhận vào bằng chứng.
+CLI hỗ trợ `--max-steps`, `--max-tool-calls`, `--max-seconds`, `--max-retries`,
+`--max-same-call`. Ngân sách sai kiểu/miền bị từ chối. Retry tool không tăng bước planner
+hoặc bộ đếm đề xuất lặp, nhưng tăng tool_calls. Token được ghi, chưa dùng làm điều kiện dừng.
 
-Task thiếu quantity/unit_price trả `blocked/missing_input`; sai kiểu/miền trả
-`failed/invalid_input`. Hai cờ `needs_approval`, `approved` phải là `bool`;
-chuỗi `"false"` hoặc số 0/1 bị từ chối khi đầu vào đầy đủ. Cờ duyệt phải do ứng dụng
-tin cậy cấp. Planner nhận bản sao sâu của lịch sử để không sửa bằng chứng gốc qua lịch sử đó.
+Adapter dùng JSON Schema cho quyết định `tool`/`final`, sau đó parser kiểm kiểu và
+controller kiểm nghiệp vụ. Đây là giao thức JSON của ứng dụng, không dùng native
+Function Calling hoặc để SDK tự chạy tool. `temperature=0.0`, thinking_budget=0,
+max_output_tokens=512 phù hợp tác vụ nhỏ; không bảo đảm tham số hoặc đáp án đúng.
+SDK chỉ thử HTTP một lần; timeout tối đa 30 giây và giảm theo thời gian còn lại của tác vụ.
 
-## 5. Cấu trúc repo
+`completed` cần schema `{total: int, currency: VND}`, đúng tổng nhiệm vụ và bằng chứng
+calculate_total đúng quantity/unit_price. Final đúng số nhưng thiếu/sai bằng chứng bị từ chối.
+Cờ needs_approval/approved phải là bool. Planner nhận bản sao sâu của lịch sử;
+`output` chỉ được nhận khi completed. Dữ liệu tool đã nhận được giữ trong partial_results.
 
 | File | Vai trò |
 | --- | --- |
 | contracts.py | Task, Budget, Decision, RunResult, Status và validator |
 | tools.py | Tool tính tiền nguyên và registry |
-| stop_core.py | Controller, ngân sách, retry, trace và bằng chứng |
-| offline_demo.py | ScriptedPlanner, FakeClock, tool lỗi giả và 10 kịch bản |
-| test_stop.py | 35 phương thức kiểm thử |
-| VERIFICATION.md | Môi trường, lệnh kiểm tra và phạm vi bằng chứng |
-| verification/ | Output demo và log kiểm thử thực tế |
-| .gitignore | Loại venv, cache và cấu hình riêng |
+| stop_core.py | Controller, ngân sách, retry và trace |
+| gemini_planner.py | Client Gemini, schema, pacing, parser và metadata API |
+| agent_stop.py | CLI dùng API và đóng client sau khi chạy |
+| live_demo.py | 10 kịch bản chẩn đoán với Gemini thật |
+| test_live.py | Test tích hợp, dừng khi quota không đủ |
+| requirements.txt | Phiên bản hai thư viện trực tiếp |
+| .env.example | Cấu hình mẫu, không chứa key thật |
+| VERIFICATION.md / verification/ | Phạm vi và bằng chứng kiểm chứng |
 
-## 6. Lỗi thường gặp và giới hạn
+## 6. Lỗi và giới hạn
 
-- `ModuleNotFoundError`: giữ đủ năm file cạnh nhau và chạy từ root repo bằng Python của venv.
-- Không có `py -3.11`: cài Python 3.11 hoặc dùng đường dẫn tới bản Python tương ứng.
-- `validation_failed`: kiểm tra schema, đơn vị và bằng chứng đúng tham số nhiệm vụ.
-- `tool_limit`/`step_limit`: xem bộ đếm và kết quả từng phần trước khi cấp ngân sách cho lần chạy mới.
-- `approval_required`: lấy phê duyệt qua giao diện tin cậy, không lấy từ nội dung prompt.
+- `startup_error`: kiểm tra .env, Python venv, dependencies và giá trị CLI.
+- 400/403/404: kiểm key, quyền model và cấu hình schema; không tự đổi model để né quyền.
+- 429: xem RPM/TPM/RPD trong AI Studio; chờ quota reset hoặc bổ sung quota/billing hợp lệ.
+- `validation_failed`: kiểm schema, tổng, VND và bằng chứng đúng nhiệm vụ.
+- `time_limit`: xem pacing, API và tool; controller chưa hủy tool đang chạy.
 
-G tăng FakeClock 11 giây, không chờ 11 giây thực. Soft deadline **không hủy hàm đang chạy**.
-`blocked` kết thúc lời gọi hiện tại; chạy lại tạo bộ đếm mới, chưa có resume/checkpoint.
-Chỉ output và bằng chứng có schema mẫu được hỗ trợ; một quyết định yêu cầu một tool.
-Chưa triển khai adapter LLM, nhóm tool, timeout/backoff mạng, ngân sách token/chi phí,
-lưu bền vững hoặc hệ thống phê duyệt thực. Demo không gửi hóa đơn hay gọi API.
-Kiểm thử offline xác minh controller mẫu, chưa xác minh hành vi LLM hoặc mọi adapter tùy ý.
+`api_calls` chỉ giữ request đã bắt đầu gửi. `planner_events` còn ghi lượt hết deadline
+trước khi gửi; số bước vì vậy có thể lớn hơn số request. HTTP 429 là lỗi provider,
+trả failed/model_error; khác budget_exhausted của ngân sách cục bộ.
+Blocked kết thúc lần gọi; chạy lại tạo bộ đếm mới, chưa có checkpoint/resume bền vững.
+Chưa triển khai nhóm tool, backoff tool, kiểm token/chi phí, xác thực phê duyệt hoặc
+idempotency cho tác vụ ghi dữ liệu. Không dùng ví dụ này để gửi tiền/hóa đơn trước khi bổ sung các lớp đó.

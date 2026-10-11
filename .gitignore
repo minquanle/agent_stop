@@ -4,6 +4,10 @@ __pycache__/
 *.py[cod]
 .env
 .env.*
+!.env.example
+live_results.json
+live_output.txt
+live_tests.txt
 .vscode/
 .idea/
 .DS_Store

@@ -1,0 +1,148 @@
+[
+  {
+    "model": "gemini-2.5-flash",
+    "result": {
+      "status": "completed",
+      "reason": "criteria_met",
+      "steps": 2,
+      "tool_calls": 1,
+      "output": {
+        "total": 100000,
+        "currency": "VND"
+      },
+      "partial_results": [
+        {
+          "tool": "calculate_total",
+          "args": {
+            "quantity": 4,
+            "unit_price": 25000
+          },
+          "data": {
+            "total": 100000,
+            "currency": "VND"
+          }
+        }
+      ],
+      "trace": [
+        {
+          "event": "model_attempt",
+          "step": 1
+        },
+        {
+          "event": "tool_attempt",
+          "step": 1,
+          "name": "calculate_total",
+          "attempt": 1
+        },
+        {
+          "event": "tool_success",
+          "step": 1,
+          "name": "calculate_total"
+        },
+        {
+          "event": "model_attempt",
+          "step": 2
+        },
+        {
+          "event": "stopped",
+          "status": "completed",
+          "reason": "criteria_met",
+          "step": 2
+        }
+      ],
+      "next_action": "Use the verified output."
+    },
+    "api_calls": [
+      {
+        "model": "gemini-2.5-flash",
+        "ok": true,
+        "request_sent": true,
+        "pacing_seconds": 0.0,
+        "response_id": "Pb3LasW5FJuy2roPmIPi2AM",
+        "model_version": "gemini-2.5-flash",
+        "prompt_tokens": 160,
+        "output_tokens": 37,
+        "total_tokens": 197,
+        "decision": {
+          "kind": "tool",
+          "tool": "calculate_total",
+          "args": {
+            "quantity": 4,
+            "unit_price": 25000
+          },
+          "candidate": {}
+        },
+        "seconds": 1.125
+      },
+      {
+        "model": "gemini-2.5-flash",
+        "ok": true,
+        "request_sent": true,
+        "pacing_seconds": 13.875,
+        "response_id": "TL3Lau6yFZLJrfcPmOG8SQ",
+        "model_version": "gemini-2.5-flash",
+        "prompt_tokens": 249,
+        "output_tokens": 42,
+        "total_tokens": 291,
+        "decision": {
+          "kind": "final",
+          "tool": "",
+          "args": {},
+          "candidate": {
+            "total": 100000,
+            "currency": "VND"
+          }
+        },
+        "seconds": 15.016
+      }
+    ],
+    "planner_events": [
+      {
+        "model": "gemini-2.5-flash",
+        "ok": true,
+        "request_sent": true,
+        "pacing_seconds": 0.0,
+        "response_id": "Pb3LasW5FJuy2roPmIPi2AM",
+        "model_version": "gemini-2.5-flash",
+        "prompt_tokens": 160,
+        "output_tokens": 37,
+        "total_tokens": 197,
+        "decision": {
+          "kind": "tool",
+          "tool": "calculate_total",
+          "args": {
+            "quantity": 4,
+            "unit_price": 25000
+          },
+          "candidate": {}
+        },
+        "seconds": 1.125
+      },
+      {
+        "model": "gemini-2.5-flash",
+        "ok": true,
+        "request_sent": true,
+        "pacing_seconds": 13.875,
+        "response_id": "TL3Lau6yFZLJrfcPmOG8SQ",
+        "model_version": "gemini-2.5-flash",
+        "prompt_tokens": 249,
+        "output_tokens": 42,
+        "total_tokens": 291,
+        "decision": {
+          "kind": "final",
+          "tool": "",
+          "args": {},
+          "candidate": {
+            "total": 100000,
+            "currency": "VND"
+          }
+        },
+        "seconds": 15.016
+      }
+    ],
+    "elapsed_seconds": 16.141,
+    "case": "A",
+    "utc": "2026-10-11T16:46:05.176987+00:00",
+    "diagnostic_tool": false
+  }
+]
